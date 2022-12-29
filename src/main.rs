@@ -5,6 +5,7 @@ use std::path::Path;
 use std::process;
 use std::process::{Command, Stdio};
 use colored::Colorize;
+use spinners::{Spinner, Spinners};
 
 fn set_current_dir() -> bool { 
     // Get the current working directory 
@@ -78,7 +79,7 @@ fn open_directory(directory: &str) {
 }
 
 fn should_continue() -> bool {
-    println!("{}", format!("Do you want to continue? (y/n)").yellow());
+    println!("{}", format!("Do you want to continue? (y/N)").yellow());
 
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
@@ -92,11 +93,16 @@ fn should_continue() -> bool {
 }
 
 fn copy_files(filenames: Vec<String>, output_dir: &str) {
+    println!("Start copied files, it will take some time...");
+
     // Create the output directory if it doesn't exist
     if !Path::new(&output_dir).exists() {
         fs::create_dir(&output_dir).expect("Failed to create output directory");
     }
 
+    // Create and start a spinner
+    let mut sp = Spinner::new(Spinners::Line, "Coping files".into());
+    
     for filename in filenames {
         let file_path = Path::new(&filename);
 
@@ -110,7 +116,9 @@ fn copy_files(filenames: Vec<String>, output_dir: &str) {
         }
     }
 
-    println!("{}", format!("{}", "Finished copied files").green());
+    //stop spinner
+    sp.stop();
+    println!("\n{}", format!("{}", "Finished copied files").green());
 }
 
 fn find_files(filenames: Vec<String>) -> Vec<String> {
@@ -147,17 +155,16 @@ fn find_files(filenames: Vec<String>) -> Vec<String> {
         }
     }
 
+    println!("Found Files:  {:?}", paths);
+
     // Print the list of not found files
     if !not_found.is_empty() {
         println!("The following files were ({}):", format!("not found {}", not_found.len()).red());
         for filename in not_found {
-            println!(" - {}", format!("{}", filename).red());
+            print!("{},", format!("{}", filename).red());
         }
+        println!("");
     }
-
-    println!("Found {} files.", paths.len());
-    println!("{}", format!("Found {} files.", paths.len()).green());
-
     paths
 }
 
@@ -165,6 +172,10 @@ fn find_files(filenames: Vec<String>) -> Vec<String> {
 fn generate_filenames(filenames: Vec<String>, extensions: &Vec<String>) -> Vec<String> {
     let mut generated_filenames = vec![];
     for filename in filenames {
+        if filename.is_empty() {
+            continue;
+        }
+
         let path = Path::new(&filename);
         let stem = path.file_stem().unwrap().to_str().unwrap();
         for extension in extensions {
@@ -212,6 +223,8 @@ fn get_filenames_and_extensions() -> (Vec<String>, Vec<String>) {
 }
 
 fn main() {
+    println!("Version: {}\n", env!("CARGO_PKG_VERSION"));
+
     let mut success = false; 
     while !success { 
         success = set_current_dir(); 
@@ -225,24 +238,24 @@ fn main() {
     let generated_filenames = generate_filenames(filenames, &extensions);
 	println!("Generated filenames: {:?}", generated_filenames);
     let paths = find_files(generated_filenames);
-	println!("Found Files:  {:?}", paths);
+    println!("{}", format!("Found {} files.", paths.len()).green());
 	
 	if !should_continue() {
-        println!("Exiting...");
+        println!("Exiting...\n\n");
         process::exit(0);
     }
-	println!("Continuing...");
+	
 
     // Prompt the user for the output directory
     println!("{}", format!("Enter the output directory:").yellow());
     let mut output_dir = String::new();
     io::stdin().read_line(&mut output_dir).unwrap();
     let output_dir = output_dir.trim();
-    println!("The output directory is: {}", format!("{}", output_dir).green());
+    println!("The output directory is: \n    {}", format!("{}", output_dir).green());
 
     copy_files(paths, output_dir);
 	
     open_directory(output_dir);
 
-    println!("Progrma finished, you can now close this window.");
+    println!("Progrma finished, you can now close this window.\n\n");
 }
