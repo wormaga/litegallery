@@ -223,6 +223,19 @@ fn get_filenames_and_extensions() -> (Vec<String>, Vec<String>) {
 }
 
 fn main() {
+    // displaying version when "-v" or "--version" is passed
+    let args: Vec<String> = env::args().collect();
+    let first_passed_argument = &args[1];
+
+    let version_parameter: String = String::from("--version");
+    let version_parameter_short: String = String::from("-v");
+    if first_passed_argument.eq(&version_parameter) || first_passed_argument.eq(&version_parameter_short) {
+        print!("{}", env!("CARGO_PKG_VERSION"));
+        process::exit(0);
+    }
+
+
+    // Start of the program
     println!("Version: {}\n", env!("CARGO_PKG_VERSION"));
 
     let mut success = false; 
